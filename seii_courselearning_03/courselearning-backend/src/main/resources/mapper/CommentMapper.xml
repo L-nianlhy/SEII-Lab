@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.seecoder.courselearning.mapperservice.forum.CommentMapper">
+  <resultMap id="BaseResultMap" type="cn.seecoder.courselearning.po.forum.Comment">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="content" jdbcType="VARCHAR" property="content" />
+    <result column="post_id" jdbcType="INTEGER" property="postId" />
+    <result column="user_id" jdbcType="INTEGER" property="userId" />
+    <result column="replied_id" jdbcType="INTEGER" property="repliedId" />
+    <result column="have_read" jdbcType="BOOLEAN" property="haveRead" />
+  </resultMap>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select id, create_time, content, post_id, user_id, replied_id, have_read
+    from comment
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <select id="selectByPostIdSortedByTime" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select id, create_time, content, post_id, user_id, replied_id, have_read
+    from comment
+    where post_id=#{postId,jdbcType=INTEGER}
+    order by create_time desc
+  </select>
+  <insert id="insert" parameterType="cn.seecoder.courselearning.po.forum.Comment" useGeneratedKeys="true" keyProperty="id">
+    insert into comment(id, create_time, content, post_id, user_id, replied_id, have_read)
+    values (#{id,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP},
+      #{content,jdbcType=VARCHAR}, #{postId,jdbcType=INTEGER},
+      #{userId,jdbcType=INTEGER}, #{repliedId,jdbcType=INTEGER},
+      #{haveRead,jdbcType=BOOLEAN})
+  </insert>
+  <select id="selectReplyNoticeOfCommentByUser" parameterType="java.lang.Integer" resultType="cn.seecoder.courselearning.po.forum.ReplyNotice">
+    select c1.content as replyContent, c2.content as repliedContent, c1.post_id as postId, c1.id as commentId,
+      c1.user_id as replierId, c2.user_id as repliedUserId, c1.create_time as replyTime
+    from comment as c1, comment as c2
+    where c1.have_read=false and c1.replied_id IS NOT NULL and c1.replied_id=c2.id and c1.user_id!=c2.user_id and c2.user_id=#{userId, jdbcType=INTEGER}
+    order by c1.create_time desc
+  </select>
+  <select id="selectReplyNoticeOfPostByUser" parameterType="java.lang.Integer" resultType="cn.seecoder.courselearning.po.forum.ReplyNotice">
+    select c.content as replyContent, p.content as repliedContent, p.id as postId, c.id as commentId,
+      c.user_id as replierId, p.user_id as repliedUserId, c.create_time as replyTime
+    from comment as c, post as p
+    where c.have_read=false and c.replied_id IS NULL and c.post_id=p.id and c.user_id!=p.user_id and p.user_id=#{userId,jdbcType=INTEGER}
+    order by c.create_time desc
+  </select>
+  <update id="updateSetRead" parameterType="java.lang.Integer">
+    update comment
+    set have_read=true
+    where id=#{commentId,jdbcType=INTEGER}
+  </update>
+</mapper>
